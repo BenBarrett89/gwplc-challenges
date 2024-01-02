@@ -21,6 +21,10 @@ describe("numeralToNumber", () => {
     const result = numeralToNumber("twenty four");
     expect(result).toBe(24);
   })
+  it('should return three digit numbers when provided with their English equivalents (exact hundred)', () => {
+    const result = numeralToNumber("Eight hundred");
+    expect(result).toBe(800);
+  })
   it('should return three digit numbers when provided with their English equivalents (with other numbers)', () => {
     const result = numeralToNumber("Eight hundred and twelve");
     expect(result).toBe(812);

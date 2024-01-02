@@ -45,3 +45,10 @@ export enum Numbers {
   
   export type Conjunction = keyof typeof Conjunctions;
   
+  export type Total = {
+    sum: number,
+    carry: number,
+    multiplier: number,
+    error: boolean,
+  }
+  

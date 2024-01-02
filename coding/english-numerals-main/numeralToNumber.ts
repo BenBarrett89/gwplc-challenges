@@ -1,7 +1,7 @@
-import { Conjunction, Conjunctions, Multiplier, Multipliers, Number, Numbers } from "./numeralToNumber.types";
+import { Conjunction, Conjunctions, Multiplier, Multipliers, Number, Numbers, Total } from "./numeralToNumber.types";
 
 export const numeralToNumber = (input: string): number => {
-  return input
+  const processing = input
     .toLowerCase()
     .replace(/([^a-z]+)/gi, ' ')
     .split(/\s+/)
@@ -13,22 +13,42 @@ export const numeralToNumber = (input: string): number => {
       const isNumber = Boolean(number);
       const isMultiplier = Boolean(multiplier);
       const isConjunction = Boolean(conjunction);
+      const isFinal = words.length === index + 1;
 
       // TODO remove logging once not valuable - for development only
-      console.table([{current, number, isNumber, multiplier, isMultiplier, conjunction, isConjunction}]);
+      console.table([{current, number, multiplier, conjunction, isFinal, sum: total.sum, carry: total.carry, totalMultiplier: total.multiplier}]);
 
       // return NaN if the word is not recognised (cannot be converted to a number)
       if (!isNumber && !isMultiplier && !isConjunction) {
         words = words.splice(0); // amend the array to break the reduce early
-        return NaN;
+        return Object.assign(total, { error: true });
       }
 
+      let newSum = total.sum;
+      let newCarry = total.carry;
+      let newMultiplier = total.multiplier;
+
       if (isNumber) {
-        return total + number;
+        newCarry += number;
       }
-      else {
-        // TODO add in multipliers next to handle larger numbers
-        return total;
+      if (isMultiplier) {
+        newMultiplier *= multiplier;
       }
-    }, 0)
+
+      if (isFinal) {
+        newSum += (newCarry * newMultiplier);
+      }
+
+      return {
+        sum: newSum,
+        carry: newCarry,
+        multiplier: newMultiplier,
+        error: false
+      }
+    }, { sum: 0, carry: 0, multiplier: 1, error: false} as Total)
+
+    // TODO remove logging once not valuable - for development only
+    console.table([processing])
+
+    return processing.error ? NaN : processing.sum;
 };
