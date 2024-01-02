@@ -30,7 +30,6 @@ export enum Numbers {
   }
   
   export enum Multipliers {
-    hundred = 100,
     thousand = 1000,
     million = 1000000,
   }
@@ -48,7 +47,5 @@ export enum Numbers {
   export type Total = {
     sum: number,
     carry: number,
-    multiplier: number,
     error: boolean,
   }
-  

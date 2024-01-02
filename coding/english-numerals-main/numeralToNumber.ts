@@ -11,43 +11,44 @@ export const numeralToNumber = (input: string): number => {
       const conjunction = Conjunctions[current as Conjunction];
 
       const isNumber = Boolean(number);
+      const isHundred = current === "hundred";
       const isMultiplier = Boolean(multiplier);
       const isConjunction = Boolean(conjunction);
       const isFinal = words.length === index + 1;
 
       // TODO remove logging once not valuable - for development only
-      console.table([{current, number, multiplier, conjunction, isFinal, sum: total.sum, carry: total.carry, totalMultiplier: total.multiplier}]);
+      console.table([{current, number, multiplier, conjunction, isFinal, isHundred, sum: total.sum, carry: total.carry}]);
 
       // return NaN if the word is not recognised (cannot be converted to a number)
-      if (!isNumber && !isMultiplier && !isConjunction) {
+      if (!isNumber && !isHundred && !isMultiplier && !isConjunction) {
         words = words.splice(0); // amend the array to break the reduce early
         return Object.assign(total, { error: true });
       }
 
-      let newSum = total.sum;
-      let newCarry = total.carry;
-      let newMultiplier = total.multiplier;
+      let sum = total.sum;
+      let carry = total.carry;
 
       if (isNumber) {
-        newCarry += number;
+        carry += number;
+      }
+      else if (isHundred) {
+        carry *= 100;
       }
       else if (isMultiplier) {
-        newMultiplier *= multiplier;
+        sum += carry * multiplier;
+        carry = 0;
       }
 
-      if (isFinal || isConjunction) {
-        newSum += (newCarry * newMultiplier);
-        newCarry = 0;
-        newMultiplier = 1;
+      if (isFinal) {
+        sum += carry;
       }
 
       return {
-        sum: newSum,
-        carry: newCarry,
-        multiplier: newMultiplier,
+        sum,
+        carry,
         error: false,
       }
-    }, { sum: 0, carry: 0, multiplier: 1, error: false} as Total)
+    }, { sum: 0, carry: 0, error: false} as Total)
 
     // TODO remove logging once not valuable - for development only
     console.table([processing])
