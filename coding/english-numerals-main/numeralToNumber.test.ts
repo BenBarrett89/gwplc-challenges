@@ -94,7 +94,7 @@ describe("numeralToNumber", () => {
     expect(thirdResult).toBe(33000);
     const fourthResult = numeralToNumber("ten nine eight seven six five four three two one and hundred and and and and fifty and and five");
     expect(fourthResult).toBe(5555);
-    const fifthResult = numeralToNumber("zero one zero zero zero one one zero zero one one zero one zero");
+    const fifthResult = numeralToNumber("zero ONE zero zero zero ONE ONE zero zero ONE ONE zero ONE zerO");
     expect(fifthResult).toBe(6);
   })
 })
