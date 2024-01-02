@@ -65,24 +65,60 @@ I will discuss the following individual aspects of the solution in more detail:
 - [Site access](#Site%20access) - how the site is exposed and initially loaded
 - [Authentication](#Authentication) - how users log into the application
 - [Creating posts](#Creating%20posts) - how posts are created and subsequently approved
+- [Monitoring](#Monitoring) - how the application will be observable
 
 #### Deployment
 
 ![Deployment diagram](./images/Architectural%20Challenge-Deployment.drawio.png)
 
+The majority of solution can be deployed using AWS Amplify, whereas the other elements that cannot be deployed via this method can be deployed using Terraform, CloudFormation or the AWS CDK. AWS Amplify uses CloudFormation stacks to realise it's deployments.
+
 #### Site access
 
 ![Site access diagram](./images/Architectural%20Challenge-Site%20Access.drawio.png)
+
+The site can be hosted using AWS Amplify Hosting. This simplifies the deployment and will allow for easy use of the Simple Storage Service (S3) for hosting the application code (site HTML, JavaScript, CSS) and any other static resources (images etc), CloudFront as the Content Delivery Network (CDN), Certificate Manager for a SSL/TSL certificate and Route 53 public hosted zone to provide DNS to a registered domain.
+
+The client will enter the DNS domain name in their browser (created in the Route 53 public hosted zone), will be directed to the CloudFront distribution, which is configured to serve the application stored in the S3 bucket. CloudFront will be configured to use a certificate issued by Certificate Manager (AWS ACM) for the registered domain.
+
+Once the resources have been received by the client's browser, the JavaScript code (React application for example) will run, and will use the AWS Amplify client to run a GraphQL query to retrieve the posts. This can be written to retrieve the posts in the desired order (newest first) and could also limit (paginate) posts if required. The posts will have a property stating whether they have been approved or not, and only approved posts will be fetched as part of this read. For this call, prior authorization may or may not be required - in this diagram I have not required authorization for reading the posts, only for creating posts under a given username.
 
 #### Authentication
 
 ![Authentication diagram](./images/Architectural%20Challenge-Authentication.drawio.png)
 
+Authentication (and authorization) in the solution will be provided by AWS Cognito. AWS Amplify auth has authentication integration that can be added with the authenticator component. A log in form can be created which will post to Cognito (using the AWS Amplify auth client) and will return an ID Token (for authentication) to be stored in the browser for showing the user is logged in and an access token (for authorization) that can be sent through to the API for allowing the user to create posts.
+
 #### Creating posts
 
 ![Creating posts diagram](./images/Architectural%20Challenge-Creating%20Posts.drawio.png)
 
+A schema will be created in AppSync which is authorized by the Cognito user pool, that GraphQL mutations can be made to. A DynamoDB table will store the posts made by the authorized users. These posts will initially be created with a property stating that they have not been approved.
+
+A DynamoDB stream will trigger, either in batches if required (and depending on the interface provided by the third party API) or in real time for individual post creations which will be handled by a Lambda function that will make a call to the third party approval API. If credentials or a token is required, this/these will be picked up here (access controlled by the IAM role) when the request is made to the API (this is absent from the diagram as it was assumed in the assumptions that these would not be required).
+
+If the approval API returns true for the post (or posts, depending on interface) and update the the DynamoDB table will be made (the diagram shows directly, but could also use AppSync) setting the approved property to true. The post will now show in the frontend application when the posts are queried.
+
+If the approval API returns false for the post/posts then the appropriate record will be removed from the DynamDB table (directly, or via AppSync).
+
+For a more distributed architecture, this Lambda function could instead be replaced with several functions and/or Step Functions to handle the triggering of the Step Functions, the call to the third party approval API, the approved update to the record/records and the rejected (not approved) update to the record/records.
+
+If the approval API returns some error, or is not available, failed requests can be added to an SQS queue which can be alerted on and investigated as required.
+
+#### Monitoring
+
+![Monitoring](./images/Architectural%20Challenge-Monitoring.drawio.png)
+
+The assumptions were that only basic monitoring was required, which CloudWatch should be able to provide.
+
+The main area for observability is likely around the asynchronous post approval process, and the Lambda function can be configured to log application logs to a CloudWatch log group (which can also have CloudWatch metrics built from it if necessary, which could subsequently trigger some CloudWatch alarm).
+
+CloudWatch metrics can be displayed on a CloudWatch dashboard should there be a requirement for some view of the application's performance / status.
+
 ### Future extension and other potential options
 
-- Alerting on errors
+- Alerting on errors (CloudWatch alarms) through to developer communication tools (e.g. Slack, shared email inbox etc)
 - More specific error handling such as implementing a dead letter queue for redriving failed messages etc
+- Some observability of unapproved posts in the database or automated cleaning process to delete (or notify on) any aged posts in the database that might not have been processed successfully by the Lambda function
+- Client side logging/monitoring (e.g. Sentry) could be added to observe client side errors
+- Encryption of data in the database via KMS (not included in the diagram)
