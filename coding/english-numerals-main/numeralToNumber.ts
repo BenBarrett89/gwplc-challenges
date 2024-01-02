@@ -31,19 +31,21 @@ export const numeralToNumber = (input: string): number => {
       if (isNumber) {
         newCarry += number;
       }
-      if (isMultiplier) {
+      else if (isMultiplier) {
         newMultiplier *= multiplier;
       }
 
-      if (isFinal) {
+      if (isFinal || isConjunction) {
         newSum += (newCarry * newMultiplier);
+        newCarry = 0;
+        newMultiplier = 1;
       }
 
       return {
         sum: newSum,
         carry: newCarry,
         multiplier: newMultiplier,
-        error: false
+        error: false,
       }
     }, { sum: 0, carry: 0, multiplier: 1, error: false} as Total)
 
