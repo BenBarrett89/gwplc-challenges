@@ -47,5 +47,5 @@ export const numeralToNumber = (input: string): number => {
       }
     }, { sum: 0, carry: 0, error: false} as Total)
 
-    return processing.error ? NaN : processing.sum;
+    return processing.error || processing.sum > 1000000 ? NaN : processing.sum;
 };
