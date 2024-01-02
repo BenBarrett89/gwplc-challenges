@@ -10,14 +10,11 @@ export const numeralToNumber = (input: string): number => {
       const multiplier = Multipliers[current as Multiplier];
       const conjunction = Conjunctions[current as Conjunction];
 
-      const isNumber = Boolean(number);
+      const isNumber = Boolean(number || number === 0); // zero will not coerce to true / is not truthy
       const isHundred = current === "hundred";
       const isMultiplier = Boolean(multiplier);
       const isConjunction = Boolean(conjunction);
       const isFinal = words.length === index + 1;
-
-      // TODO remove logging once not valuable - for development only
-      console.table([{current, number, multiplier, conjunction, isFinal, isHundred, sum: total.sum, carry: total.carry}]);
 
       // return NaN if the word is not recognised (cannot be converted to a number)
       if (!isNumber && !isHundred && !isMultiplier && !isConjunction) {
@@ -49,9 +46,6 @@ export const numeralToNumber = (input: string): number => {
         error: false,
       }
     }, { sum: 0, carry: 0, error: false} as Total)
-
-    // TODO remove logging once not valuable - for development only
-    console.table([processing])
 
     return processing.error ? NaN : processing.sum;
 };
